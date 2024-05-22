@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NDEF Reader</title>
+</head>
+<body>
+  <h1>NDEF Reader</h1>
+  <button id="readButton">Read NDEF Serial Number</button>
+  <p id="result"></p>
+
+  <script>
+    document.getElementById('readButton').addEventListener('click', async () => {
+      if (!('NDEFReader' in window)) {
+        document.getElementById('result').textContent = 'NDEFReader is not supported by your browser.';
+        return;
+      }
+
+      const ndefReader = new NDEFReader();
+
+      try {
+        const event = await new Promise((resolve, reject) => {
+          const ctlr = new AbortController();
+          ctlr.signal.onabort = reject;
+          ndefReader.addEventListener(
+            'reading',
+            (event) => {
+              ctlr.abort();
+              resolve(event);
+            },
+            { once: true }
+          );
+          ndefReader.scan({ signal: ctlr.signal }).catch((err) => reject(err));
+        });
+
+        const serialNumber = event.serialNumber;
+        document.getElementById('result').textContent = `Serial Number: ${serialNumber}`;
+
+        // Send the serial number to the server
+        // const response = await fetch('/submit-ndef-serial', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: JSON.stringify({ serialNumber }),
+        // });
+
+        // const result = await response.json();
+        console.log(serialNumber);
+      } catch (error) {
+        document.getElementById('result').textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
